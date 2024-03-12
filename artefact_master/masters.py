@@ -1,33 +1,12 @@
 from __future__ import annotations
 from fsspec.implementations.arrow import AbstractFileSystem
+from pathlib import PurePath
 from typing import Union, List, Dict
 
+from artefact_master.exceptions import AlreadyRegisteredError, NotRegisteredError
+from artefact_master.aretefacts import Artefact, Dataset
 
-class NotRegisteredError(KeyError):
-    ...
-
-
-class AlreadyRegisteredError(KeyError):
-    ...
-
-
-class ObjectNotFoundError(FileNotFoundError):
-    ...
-
-
-class Artefact:
-    def __init__(self, path: str) -> None:
-        self._path = path
-
-    @property
-    def path(self) -> str:
-        return self._path
-
-
-class Dataset(Artefact):
-    ...
-
-
+# is registered as property (public method)?
 class ArtefactMaster:
     def __init__(
         self,
@@ -64,15 +43,15 @@ class ArtefactMaster:
     def _call_registrered(self, artefact_name: str) -> None:
         if not self._is_registered(artefact_name=artefact_name):
             raise NotRegisteredError(
-                f"Artefact {artefact_name} doesn't exists in registered artefacts: {self._list_artefacts()}"
+                artefact_name=artefact_name, registered_artefacts=self._list_artefacts()
             )
 
     def _register_artefact(self, artefact_name: str, artefact: Artefact) -> None:
         if self._is_registered(artefact_name=artefact_name):
             raise AlreadyRegisteredError(
-                f"Artefact {artefact_name} already exists in registered artefacts."
+                artefact_name=artefact_name
             )
-
+        # if not artefact.exists --> raise artefact not found error
         self._registered_artefacts.update({artefact_name: artefact})
 
     def _get_artefact(self, artefact_name: str) -> Artefact:
@@ -81,15 +60,16 @@ class ArtefactMaster:
 
     def _delete_artefact(self, artefact_name: str) -> None:
         artefact = self._get_artefact(artefact_name)
-        self._fs.rm(artefact._path, recursive=True)
+        self._fs.rm(artefact.path, recursive=True)
         del self._registered_artefacts[artefact_name]
 
 
 class DatasetMaster(ArtefactMaster):
     def __init__(self, root_path: str, fs: AbstractFileSystem) -> None:
         registered_artefacts = {
-            dataset_path.split("/")[-1]: Dataset(path=dataset_path)
+            PurePath(dataset_path).name: Dataset(path=dataset_path)
             for dataset_path in fs.ls(root_path)
+            if fs.isdir(dataset_path)
         }
 
         super().__init__(
