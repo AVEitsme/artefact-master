@@ -3,7 +3,7 @@ from pathlib import PurePath
 from typing import Dict, List, Union
 from fsspec.implementations.arrow import AbstractFileSystem
 
-from artefact_master.aretefacts import Artefact, Dataset
+from artefact_master.artefacts import Artefact, Dataset
 from artefact_master.exceptions import (
     AlreadyRegisteredError,
     ArtefactNotFoundError,

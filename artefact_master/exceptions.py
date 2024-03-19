@@ -1,6 +1,6 @@
 from typing import Dict
 
-from artefact_master.aretefacts import Artefact
+from artefact_master.artefacts import Artefact
 
 
 class NotRegisteredError(Exception):
